@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Estimate Billing</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+:root{
+  --bg:#f4f1eb;--surface:#fff;--border:#d4cfc6;
+  --text:#1a1a1a;--muted:#7a7570;
+  --accent:#2d5016;--al:#e8f0df;
+  --danger:#8b2020;--dl:#fdf0f0;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:60;background:var(--accent);color:#fff;height:50px;padding:0 14px;display:flex;align-items:center;gap:10px;border-bottom:3px solid #1a3009;}
+.hdr h1{font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:7px;}
+.gbadge{font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.16);padding:3px 10px;border-radius:3px;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.gbadge small{opacity:.65;font-size:10px;}
+.pbtn{font-family:var(--mono);font-size:10px;padding:4px 9px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:4px;}
+.pbtn:hover{background:rgba(255,255,255,.24);}
+.pdot{width:7px;height:7px;border-radius:50%;background:#888;flex-shrink:0;}
+.pdot.ok{background:#6fcf6f;}
+.pdot.set{background:#f0c060;}
+
+/* NAV */
+.nav{position:sticky;top:50px;z-index:59;background:#fff;border-bottom:2px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;}
+.nav::-webkit-scrollbar{display:none;}
+.ntab{font-family:var(--mono);font-size:11px;letter-spacing:.5px;padding:0 16px;height:40px;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;transition:all .14s;white-space:nowrap;flex-shrink:0;}
+.ntab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.ntab:hover:not(.active){color:var(--text);}
+
+/* PAGES */
+.pg{display:none;padding:14px;max-width:860px;margin:0 auto;}
+.pg.active{display:block;}
+
+/* CARDS */
+.card{background:var(--surface);border:2px solid var(--border);border-radius:6px;padding:13px;margin-bottom:13px;}
+.ctitle{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:9px;}
+
+/* INPUTS */
+input[type=text],input[type=number],select{font-family:var(--mono);font-size:13px;padding:8px 10px;border:2px solid var(--border);border-radius:4px;outline:none;background:var(--surface);transition:border-color .14s;}
+input:focus,select:focus{border-color:var(--accent);}
+.pdisp{flex:1;min-width:130px;padding:8px 11px;background:var(--al);border:2px solid var(--accent);border-radius:4px;font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:600;min-height:38px;display:flex;align-items:center;}
+.pdisp.empty{color:var(--muted);font-weight:400;background:var(--surface);border-color:var(--border);}
+.abox{font-family:var(--mono);font-size:13px;font-weight:600;padding:8px 11px;background:#f0f0f0;border:2px solid var(--border);border-radius:4px;min-width:88px;text-align:right;white-space:nowrap;}
+
+/* BUTTONS */
+.btn{font-family:var(--mono);font-size:12px;padding:8px 15px;border:2px solid;border-radius:4px;cursor:pointer;font-weight:600;transition:all .12s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.bg{background:var(--accent);color:#fff;border-color:var(--accent);}
+.bg:hover{background:#1a3009;}
+.bo{background:transparent;color:var(--accent);border-color:var(--accent);}
+.bo:hover{background:var(--al);}
+.bgh{background:transparent;color:var(--muted);border-color:var(--border);}
+.bgh:hover{border-color:var(--danger);color:var(--danger);}
+.bdr{background:var(--danger);color:#fff;border-color:var(--danger);}
+.bdr:hover{background:#6a1010;}
+.bsm{font-size:10px;padding:4px 8px;}
+
+/* FLEX ROW */
+.row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.lbl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);white-space:nowrap;}
+.abar{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;}
+
+/* TABLE */
+.twrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:7px 7px;text-align:left;border-bottom:2px solid var(--border);}
+td{padding:7px 7px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;vertical-align:middle;}
+tr:hover td{background:var(--al);}
+.tr{text-align:right;}.tc{text-align:center;}
+.delbtn{background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;opacity:.4;padding:0 2px;transition:opacity .1s;}
+.delbtn:hover{opacity:1;}
+.etbl{text-align:center;padding:32px;color:var(--muted);font-family:var(--mono);font-size:12px;}
+
+/* TOTAL */
+.tbox{background:var(--surface);border:2px solid var(--border);border-radius:4px;padding:11px 13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.tbox span{font-family:var(--mono);font-size:16px;font-weight:600;}
+
+/* HISTORY */
+.hsearch{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap;}
+.hsearch input{font-family:var(--mono);font-size:12px;padding:7px 10px;border:2px solid var(--border);border-radius:4px;outline:none;background:var(--surface);flex:1;min-width:110px;}
+.hsearch input:focus{border-color:var(--accent);}
+.hlist{display:flex;flex-direction:column;gap:7px;}
+.hcard{background:var(--surface);border:2px solid var(--border);border-radius:5px;padding:10px 11px;cursor:pointer;transition:border-color .12s;}
+.hcard:hover{border-color:var(--accent);}
+.hcard.act{border-color:var(--accent);background:var(--al);}
+.hctop{display:flex;justify-content:space-between;align-items:center;}
+.hcnum{font-family:var(--mono);font-size:13px;font-weight:600;}
+.hcamt{font-family:var(--mono);font-size:13px;color:var(--accent);}
+.hcmeta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px;}
+.hcbtns{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap;}
+.hbtn{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .1s;}
+.hb-dup{background:var(--al);border-color:var(--accent);color:var(--accent);}
+.hb-dup:hover{background:var(--accent);color:#fff;}
+.hb-prt{background:#f0f0f0;border-color:var(--border);color:var(--text);}
+.hb-prt:hover{background:#ddd;}
+.hb-del{background:var(--dl);border-color:var(--danger);color:var(--danger);}
+.hb-del:hover{background:var(--danger);color:#fff;}
+.nohist{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;padding:28px;}
+
+/* INVENTORY */
+.inv-add{display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end;}
+.ifield{display:flex;flex-direction:column;gap:3px;}
+.ifield label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.ifield input{font-family:var(--mono);font-size:12px;padding:7px 9px;border:2px solid var(--border);border-radius:4px;outline:none;background:var(--surface);}
+.ifield input:focus{border-color:var(--accent);}
+.ifc{width:100px;}.ifn{width:200px;}
+.inv-io{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.inv-io-label{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.file-btn{font-family:var(--mono);font-size:11px;padding:5px 10px;background:var(--al);border:1.5px solid var(--accent);color:var(--accent);border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
+.file-btn:hover{background:var(--accent);color:#fff;}
+.file-btn input[type=file]{display:none;}
+.itbl-wrap{border:2px solid var(--border);border-radius:5px;overflow:hidden;}
+.itbl{width:100%;border-collapse:collapse;}
+.itbl th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:8px 11px;text-align:left;border-bottom:2px solid var(--border);background:var(--bg);}
+.itbl td{padding:7px 11px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;vertical-align:middle;}
+.itbl tr:last-child td{border-bottom:none;}
+.itbl tr:hover td{background:var(--al);}
+.itbl tr.editing td{background:#fffbe6;}
+.einp{font-family:var(--mono);font-size:12px;padding:3px 7px;border:2px solid var(--accent);border-radius:3px;outline:none;background:#fff;width:100%;}
+.einp.ec{width:80px;}
+.iacell{display:flex;gap:4px;}
+.ib{font-family:var(--mono);font-size:10px;padding:3px 7px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .1s;}
+.ib-e{background:#f0f5ff;border-color:#4a6fa5;color:#4a6fa5;}
+.ib-e:hover{background:#4a6fa5;color:#fff;}
+.ib-s{background:var(--al);border-color:var(--accent);color:var(--accent);}
+.ib-s:hover{background:var(--accent);color:#fff;}
+.ib-c{background:#f0f0f0;border-color:var(--border);color:var(--muted);}
+.ib-c:hover{background:#ddd;}
+.ib-d{background:var(--dl);border-color:var(--danger);color:var(--danger);}
+.ib-d:hover{background:var(--danger);color:#fff;}
+.icount{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:9px;}
+.inv-search{display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap;}
+.inv-search input{font-family:var(--mono);font-size:12px;padding:7px 10px;border:2px solid var(--border);border-radius:4px;outline:none;background:var(--surface);flex:1;}
+.inv-search input:focus{border-color:var(--accent);}
+
+/* PRINTER PAGE */
+.pfield{display:flex;flex-direction:column;gap:4px;margin-bottom:11px;}
+.pfield label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.pfield input{font-family:var(--mono);font-size:13px;padding:8px 10px;border:2px solid var(--border);border-radius:4px;outline:none;background:var(--surface);width:100%;}
+.pfield input:focus{border-color:var(--accent);}
+.pstat{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:5px;font-family:var(--mono);font-size:12px;border:1.5px solid var(--border);margin-bottom:12px;}
+.pstat.ok{background:#f0faf0;border-color:#6fcf6f;color:#2d7a2d;}
+.pstat.err{background:#fdf5f0;border-color:#e0a070;color:#7a4a00;}
+.pstat.testing{background:#f5f5ff;border-color:#a0a0e0;color:#555;}
+.phint{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.7;background:var(--bg);padding:9px;border-radius:4px;}
+.phint b{color:var(--text);}
+
+/* OVERLAYS */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:200;align-items:center;justify-content:center;padding:14px;}
+.ov.open{display:flex;}
+.modal{background:#fff;border-radius:8px;padding:20px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:13px;}
+.modal.wide{max-width:500px;}
+.mtitle{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.mbtns{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;}
+
+/* THERMAL */
+.thermal{width:280px;font-family:'Courier New',monospace;font-size:12px;line-height:1.5;color:#000;background:#fff;padding:11px 9px;border:1px dashed #ccc;}
+.thn{text-align:center;font-size:12px;font-weight:bold;letter-spacing:3px;margin-bottom:3px;text-transform:uppercase;}
+.thd{border-top:1px dashed #000;margin:5px 0;}
+.thm{display:flex;justify-content:space-between;font-size:11px;}
+.thi{display:flex;justify-content:space-between;font-size:11px;}
+.thin{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.thid{font-size:10px;color:#555;padding-left:4px;}
+.tht{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;}
+.thf{text-align:center;font-size:10px;margin-top:7px;}
+
+/* CONFIRM */
+.cbox{background:#fff;border-radius:8px;padding:22px;max-width:310px;width:100%;display:flex;flex-direction:column;gap:13px;}
+.cbox p{font-family:var(--sans);font-size:14px;line-height:1.5;}
+.cbtns{display:flex;gap:7px;justify-content:flex-end;}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--text);color:#fff;font-family:var(--mono);font-size:12px;padding:8px 18px;border-radius:4px;opacity:0;transition:all .24s;z-index:999;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* MOBILE */
+@media(max-width:580px){
+  .hdr h1{font-size:10px;}
+  .gbadge small{display:none;}
+  .pg{padding:9px;}
+  .card{padding:9px;}
+  .btn{font-size:11px;padding:7px 11px;}
+  input[type=text],input[type=number]{font-size:12px;padding:7px 9px;}
+  .thermal{width:250px;}
+  .ifn{width:150px!important;}
+}
+@media print{
+  body *{visibility:hidden;}
+  .thermal,.thermal *{visibility:visible;}
+  .thermal{position:fixed;top:0;left:0;width:280px;border:none;}
+  .mbtns,.mtitle{display:none!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <h1>⬛ Estimate</h1>
+  <div class="hdr-r">
+    <button class="pbtn" onclick="showPage('printer')">
+      <span class="pdot" id="pdot"></span>
+      <span id="plabel">WiFi Printer</span>
+    </button>
+    <div class="gbadge"><small>GIFT NO</small><strong id="giftNoDisplay">—</strong></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="ntab active" onclick="showPage('billing')">🧾 Billing</button>
+  <button class="ntab" onclick="showPage('history')">📋 History</button>
+  <button class="ntab" onclick="showPage('inventory')">📦 Inventory</button>
+  <button class="ntab" onclick="showPage('printer')">📡 Printer</button>
+</div>
+
+<!-- ════ BILLING PAGE ════ -->
+<div class="pg active" id="pg-billing">
+
+  <!-- MODE TOGGLE -->
+  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;">
+    <button class="btn bsm" id="btnNormalMode" onclick="setMode('normal')" style="background:var(--accent);color:#fff;border-color:var(--accent);">Normal Mode</button>
+    <button class="btn bsm" id="btnCalcMode" onclick="setMode('calc')" style="background:transparent;color:var(--accent);border-color:var(--accent);">🧮 Calculator Mode</button>
+  </div>
+
+  <div class="card">
+    <div class="ctitle" id="addItemTitle">Add Item</div>
+    <!-- NORMAL MODE ROW -->
+    <div id="normalModeRow">
+      <div class="row" style="margin-bottom:8px;position:relative;align-items:flex-start;">
+        <div style="position:relative;min-width:190px;flex:1;">
+          <input type="text" id="codeInput" placeholder="Code or name…" style="width:100%;" oninput="lookupCode(this.value)" onkeydown="codeKD(event)" autocomplete="off" onfocus="lookupCode(this.value)"/>
+          <div id="suggestBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--accent);border-top:none;border-radius:0 0 5px 5px;z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1);"></div>
+        </div>
+        <div class="pdisp empty" id="prodDisp">— product name —</div>
+      </div>
+    </div>
+    <!-- CALCULATOR MODE: pure qty + rate, no product lookup -->
+    <div id="calcModeRow" style="display:none;">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:8px;">Items will be numbered automatically (1, 2, 3…) with qty &amp; rate only.</div>
+    </div>
+    <div style="display:flex;gap:7px;align-items:center;flex-wrap:nowrap;overflow-x:auto;">
+      <span class="lbl" style="flex-shrink:0;">Qty</span>
+      <input type="number" id="qtyInput" value="1" min="1" style="width:70px;flex-shrink:0;" oninput="calcAmt()" onfocus="this.select()" onkeydown="itemKD(event)"/>
+      <span class="lbl" style="flex-shrink:0;">Rate </span>
+      <input type="number" id="rateInput" placeholder="0.00" style="width:90px;flex-shrink:0;" oninput="calcAmt()" onfocus="this.select()" onkeydown="itemKD(event)"/>
+      <span class="lbl" style="flex-shrink:0;">= </span>
+      <div class="abox" id="amtBox" style="min-width:80px;flex-shrink:0;">0.00</div>
+      <button class="btn bg" style="flex-shrink:0;padding:8px 14px;" onclick="addItem()">+ Add</button>
+      <button class="btn bgh" style="flex-shrink:0;padding:8px 10px;" onclick="clearEntry()">✕</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">Items</div>
+    <div class="twrap">
+      <table>
+        <thead id="itemsHead"><tr><th>Sr.</th><th>Product</th><th class="tr">Qty</th><th class="tr">Rate </th><th class="tr">Amount </th><th style="text-align:center">Act.</th></tr></thead>
+        <tbody id="itemsBody"><tr><td colspan="7" class="etbl">No items yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tbox"><span>TOTAL</span><span id="grandTotal"> 0.00</span></div>
+
+  <div class="abar">
+    <button class="btn bg" onclick="saveEstimate(false)">💾 Save Estimate</button>
+    <button class="btn bg" style="background:#1a5c30;border-color:#1a5c30;" onclick="saveEstimate(true)">🖨 Save &amp; Print</button>
+    <button class="btn bo" onclick="startNewBill()">＋ New Estimate</button>
+  </div>
+</div>
+
+<!-- EDIT ITEM MODAL -->
+<div class="ov" id="editItemOv" onclick="closeEditItem(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mtitle">✎ Edit Item</div>
+    <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);" id="editItemName"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <label style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);min-width:50px;">Qty</label>
+        <input type="number" id="editQty" min="1" style="flex:1;" onfocus="this.select()"/>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <label style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);min-width:50px;">Rate </label>
+        <input type="number" id="editRate" min="0" style="flex:1;" onfocus="this.select()"/>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;font-weight:600;padding:4px 0;">
+        <span>Amount</span><span id="editAmt"> 0.00</span>
+      </div>
+    </div>
+    <div class="mbtns">
+      <button class="btn bdr bsm" onclick="closeEditItem()">Cancel</button>
+      <button class="btn bg" onclick="saveEditItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ HISTORY PAGE ════ -->
+<div class="pg" id="pg-history">
+  <div class="card">
+    <div class="ctitle">Search Estimates</div>
+    <div class="hsearch">
+      <input type="text" id="histSearch" placeholder="Gift no, date, product name…" oninput="renderHistory()"/>
+    </div>
+  </div>
+  <div class="hlist" id="histList"><div class="nohist">No estimates saved yet.</div></div>
+</div>
+
+<!-- ════ INVENTORY PAGE ════ -->
+<div class="pg" id="pg-inventory">
+
+  <div class="card">
+    <div class="ctitle">Add / Update Product</div>
+    <div class="inv-add">
+      <div class="ifield"><label>Code</label><input class="ifc" type="text" id="newCode" placeholder="e.g. 103" onkeydown="invKD(event)"/></div>
+      <div class="ifield"><label>Product Name</label><input class="ifn" type="text" id="newName" placeholder="e.g. Water Bottle" onkeydown="invKD(event)"/></div>
+      <button class="btn bg" onclick="addProduct()">+ Add</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">Import / Export (Excel / CSV)</div>
+    <div class="inv-io">
+      <span class="inv-io-label">Import:</span>
+      <label class="file-btn">
+        📂 Import Excel/CSV
+        <input type="file" accept=".xlsx,.xls,.csv" onchange="importFile(this)"/>
+      </label>
+      <button class="btn bo bsm" onclick="exportXLSX()">⬇ Export Excel</button>
+      <button class="btn bgh bsm" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+    <div class="phint" style="font-size:10px;">
+      Excel/CSV must have columns: <b>Code</b> and <b>Name</b> (first row = header). Imports merge with existing products.
+    </div>
+  </div>
+
+  <div class="inv-search">
+    <input type="text" id="invSearch" placeholder="Search by code or name…" oninput="renderInventory()"/>
+    <button class="btn bgh bsm" onclick="renderInventory()">🔍</button>
+  </div>
+  <div class="icount" id="icount"></div>
+  <div class="itbl-wrap">
+    <table class="itbl">
+      <thead><tr><th style="width:110px">Code</th><th>Name</th><th style="width:180px">Actions</th></tr></thead>
+      <tbody id="invBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════ PRINTER PAGE ════ -->
+<div class="pg" id="pg-printer">
+  <div class="card">
+    <div class="ctitle">WiFi Thermal Printer</div>
+    <div class="pstat err" id="pstatBar">
+      <span class="pdot" id="pstatDot"></span>
+      <span id="pstatTxt">Not configured</span>
+    </div>
+    <div class="pfield"><label>Printer IP Address</label><input type="text" id="pIP" placeholder="192.168.1.100"/></div>
+    <div class="pfield"><label>Port (default 9100)</label><input type="text" id="pPort" placeholder="9100"/></div>
+    <div class="pfield">
+      <label>Paper Cut Mode</label>
+      <select id="pCutMode">
+        <option value="full">Full Cut (cuts completely through)</option>
+        <option value="partial">Partial Cut (leaves small join)</option>
+        <option value="feed_cut">Feed &amp; Full Cut (feeds before cutting)</option>
+        <option value="none">No Cut (manual tear)</option>
+      </select>
+    </div>
+    <div class="abar" style="margin-bottom:12px;">
+      <button class="btn bo" onclick="testPrinter()">🔌 Test Connection</button>
+      <button class="btn bg" onclick="savePrinter()">Save</button>
+    </div>
+    <div class="phint">
+      <b>Steps:</b><br>
+      1. Connect thermal printer to same WiFi network.<br>
+      2. Find printer IP from its settings menu or router.<br>
+      3. Most printers use port <b>9100</b> (RAW/ESC-POS).<br>
+      4. Test connection, then save.<br>
+      5. Use <b>Save &amp; Print</b> on the billing page to print directly.<br><br>
+      <b>Most common reason printing fails:</b> Browsers cannot open raw TCP sockets (port 9100). The app tries 3 methods automatically.<br><br>
+      <b>Best solution for WiFi printing:</b><br>
+      1. Install <b>RawBT</b> (Android) or <b>PrintHand</b> (Android/iOS) app.<br>
+      2. In RawBT: add your printer by IP and port 9100.<br>
+      3. Set RawBT as default in your device print settings.<br>
+      4. Use <b>Browser Print</b> button — it will route through RawBT automatically.<br><br>
+      Alternatively, the ESC/POS binary file downloads automatically if WiFi fails — open it in RawBT to print directly.
+    </div>
+  </div>
+</div>
+
+<!-- PRINT PREVIEW OVERLAY -->
+<div class="ov" id="previewOv" onclick="closePreview(event)">
+  <div class="modal wide" onclick="event.stopPropagation()" style="align-items:center;">
+    <div class="mtitle">Estimate Preview</div>
+    <div class="thermal" id="thermalDiv"></div>
+    <div class="mbtns">
+      <button class="btn bg" id="wifiPrintBtn" onclick="sendWifi()">📡 WiFi Print</button>
+      <button class="btn bo" onclick="window.print()">🖨 Browser Print</button>
+      <button class="btn" style="background:#25d366;color:#fff;border-color:#25d366;" onclick="shareActiveWhatsApp()">💬 WhatsApp</button>
+      <button class="btn bgh" onclick="closePreview()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- DISCARD WARNING OVERLAY -->
+<div class="ov" id="discardOv">
+  <div class="cbox">
+    <p>⚠️ You have <strong>unsaved items</strong> in the current estimate. Discard them?</p>
+    <div class="cbtns">
+      <button class="btn bgh" onclick="closeDiscard()">Cancel</button>
+      <button class="btn bdr" onclick="confirmDiscard()">Discard &amp; Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM OVERLAY -->
+<div class="ov" id="delOv">
+  <div class="cbox">
+    <p>Delete <strong id="delLabel"></strong>? Cannot be undone.</p>
+    <div class="cbtns">
+      <button class="btn bgh" onclick="closeDel()">Cancel</button>
+      <button class="btn bdr" onclick="confirmDel()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- SheetJS for Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let products = JSON.parse(localStorage.getItem('erp_products')||'null') || {
+  '1':'Photo Frame','2':'Pen','3':'Notebook','4':'Stapler',
+  '5':'Calculator','101':'Mug','102':'Scissors'
+};
+let bills = JSON.parse(localStorage.getItem('erp_bills')||'[]');
+let printer = JSON.parse(localStorage.getItem('erp_printer')||'null') || {ip:'192.168.1.127',port:'9100',connected:false,cutMode:'full'};
+let cur = {};           // current bill
+let editCode = null;    // inventory row being edited
+let pendDel = null;     // {id, type}
+let discardCb = null;   // callback after discard confirmed
+let activePrint = null; // bill data waiting to print
+let currentPage = 'billing';
+
+// ══════════════════════════════════════
+//  DAILY COUNTER
+// ══════════════════════════════════════
+function todayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function nextGiftNo(){
+  const key=todayKey();
+  let d=JSON.parse(localStorage.getItem('erp_daily')||'{}');
+  if(d.date!==key) d={date:key,count:0};
+  d.count++;
+  localStorage.setItem('erp_daily',JSON.stringify(d));
+  return d.count;
+}
+
+// ══════════════════════════════════════
+//  PAGE NAVIGATION
+// ══════════════════════════════════════
+function showPage(name, force=false){
+  // warn if leaving billing with unsaved items
+  if(currentPage==='billing' && name!=='billing' && !force && cur.items && cur.items.length>0 && !cur.saved){
+    discardCb=()=>showPage(name,true);
+    document.getElementById('discardOv').classList.add('open');
+    return;
+  }
+  currentPage=name;
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('pg-'+name).classList.add('active');
+  // highlight correct tab
+  const map={billing:0,history:1,inventory:2,printer:3};
+  document.querySelectorAll('.ntab')[map[name]].classList.add('active');
+  if(name==='history') renderHistory();
+  if(name==='inventory') renderInventory();
+  if(name==='printer') loadPrinterUI();
+}
+function closeDiscard(){discardCb=null;document.getElementById('discardOv').classList.remove('open');}
+function confirmDiscard(){document.getElementById('discardOv').classList.remove('open');if(discardCb){discardCb();discardCb=null;}}
+
+// ══════════════════════════════════════
+//  BILLING
+// ══════════════════════════════════════
+function initBill(){
+  const gno=nextGiftNo();
+  const now=new Date();
+  cur={
+    id:todayKey()+'-'+String(gno).padStart(3,'0'),
+    giftNo:gno,
+    dateKey:todayKey(),
+    dateStr:now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+    timeStr:now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    items:[],
+    saved:false
+  };
+  saveDraft();
+  document.getElementById('giftNoDisplay').textContent=gno;
+  renderItems();
+  clearEntry();
+}
+function saveDraft(){
+  localStorage.setItem('erp_draft',JSON.stringify(cur));
+}
+function restoreOrInit(){
+  const raw=localStorage.getItem('erp_draft');
+  if(raw){
+    try{
+      const draft=JSON.parse(raw);
+      // Only restore if it's from today (gift no should not carry over to next day)
+      if(draft.dateKey===todayKey()){
+        cur=draft;
+        document.getElementById('giftNoDisplay').textContent=cur.giftNo;
+        renderItems();
+        clearEntry();
+        return;
+      }
+    }catch(e){}
+  }
+  initBill();
+}
+
+function lookupCode(val){
+  const v=val.trim();
+  const vU=v.toUpperCase();
+  const el=document.getElementById('prodDisp');
+  const sb=document.getElementById('suggestBox');
+
+  // Exact code match
+  const exactKey=Object.keys(products).find(k=>k.toUpperCase()===vU);
+  if(exactKey){
+    el.textContent=products[exactKey];el.classList.remove('empty');
+    sb.style.display='none';
+    calcAmt();return;
+  }
+
+  // No input
+  if(!v){
+    el.textContent='— product name —';el.classList.add('empty');
+    sb.style.display='none';calcAmt();return;
+  }
+
+  // Fuzzy: match code prefix OR name contains
+  const matches=Object.keys(products).filter(k=>
+    k.toUpperCase().startsWith(vU)||
+    products[k].toLowerCase().includes(v.toLowerCase())
+  ).slice(0,8);
+
+  if(matches.length){
+    sb.innerHTML=matches.map(k=>`
+      <div onclick="selectSuggest('${k}')" style="padding:8px 11px;cursor:pointer;font-family:var(--mono);font-size:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;"
+        onmouseover="this.style.background='var(--al)'" onmouseout="this.style.background=''"
+      ><span><strong>${k}</strong></span><span style="color:var(--muted)">${products[k]}</span></div>`).join('');
+    sb.style.display='block';
+    el.textContent='Select or keep typing…';el.classList.add('empty');
+  } else {
+    sb.style.display='none';
+    el.textContent='Not found';el.classList.add('empty');
+  }
+  calcAmt();
+}
+function selectSuggest(code){
+  document.getElementById('codeInput').value=code;
+  document.getElementById('suggestBox').style.display='none';
+  const el=document.getElementById('prodDisp');
+  el.textContent=products[code];el.classList.remove('empty');
+  document.getElementById('qtyInput').focus();
+  calcAmt();
+}
+// Close suggestions when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#codeInput')&&!e.target.closest('#suggestBox'))
+    document.getElementById('suggestBox').style.display='none';
+});
+function getFound(){
+  if(billingMode==='calc'){
+    // In calc mode, item number is auto-assigned, no product lookup needed
+    return {code:'',name:''};
+  }
+  const v=document.getElementById('codeInput').value.trim().toUpperCase();
+  const key=Object.keys(products).find(k=>k.toUpperCase()===v);
+  return key?{code:key,name:products[key]}:null;
+}
+function codeKD(e){if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();document.getElementById('qtyInput').focus();}}
+function itemKD(e){if(e.key==='Enter')addItem();}
+function calcAmt(){
+  const q=parseFloat(document.getElementById('qtyInput').value)||0;
+  const r=parseFloat(document.getElementById('rateInput').value)||0;
+  document.getElementById('amtBox').textContent=(q*r).toFixed(2);
+}
+function addItem(){
+  const qty=parseFloat(document.getElementById('qtyInput').value);
+  const rate=parseFloat(document.getElementById('rateInput').value);
+  if(!qty||qty<=0){showToast('Enter quantity');return;}
+  if(!rate||rate<=0){showToast('Enter rate');return;}
+  if(billingMode==='calc'){
+    // Calculator mode: numbered item, no product name/code
+    const itemNum=cur.items.length+1;
+    cur.items.push({code:'',name:'',qty,rate,amount:qty*rate,calcMode:true});
+  } else {
+    const p=getFound();
+    if(!p){showToast('Enter a valid product code');return;}
+    cur.items.push({code:p.code,name:p.name,qty,rate,amount:qty*rate});
+  }
+  cur.saved=false;
+  saveDraft();
+  renderItems();
+  clearEntry();
+  if(billingMode==='calc') document.getElementById('qtyInput').focus();
+  else document.getElementById('codeInput').focus();
+}
+function clearEntry(){
+  document.getElementById('codeInput').value='';
+  document.getElementById('qtyInput').value='1';
+  document.getElementById('rateInput').value='';
+  document.getElementById('amtBox').textContent='0.00';
+  const el=document.getElementById('prodDisp');
+  el.textContent='— product name —';el.classList.add('empty');
+}
+function removeItem(i){cur.items.splice(i,1);cur.saved=false;saveDraft();renderItems();}
+function renderItems(){
+  const body=document.getElementById('itemsBody');
+  if(!cur.items||!cur.items.length){
+    body.innerHTML='<tr><td colspan="6" class="etbl">No items yet.</td></tr>';
+    document.getElementById('grandTotal').textContent=' 0.00';
+    return;
+  }
+  let total=0;
+  body.innerHTML=cur.items.map((it,i)=>{
+    total+=it.amount;
+    return `<tr>
+      <td style="text-align:center;font-weight:600;">${i+1}</td>
+      <td>${it.name||''}</td>
+      <td class="tr">${it.qty}</td>
+      <td class="tr">${it.rate.toFixed(2)}</td>
+      <td class="tr"><strong>${it.amount.toFixed(2)}</strong></td>
+      <td class="tc" style="white-space:nowrap;">
+        <button class="delbtn" style="font-size:12px;margin-right:2px;" onclick="openEditItem(${i})" title="Edit">✎</button>
+        <button class="delbtn" onclick="removeItem(${i})" title="Delete">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('grandTotal').textContent=' '+total.toFixed(2);
+}
+
+function saveEstimate(andPrint){
+  if(!cur.items||!cur.items.length){showToast('Add items before saving');return;}
+  bills=bills.filter(b=>b.id!==cur.id);
+  const total=cur.items.reduce((s,i)=>s+i.amount,0);
+  const saved={...cur,items:cur.items.map(i=>({...i})),total};
+  bills.unshift(saved);
+  localStorage.setItem('erp_bills',JSON.stringify(bills));
+  localStorage.removeItem('erp_draft');
+  cur.saved=true;
+  showToast(andPrint?'Saved — opening print…':'✅ Estimate saved');
+  if(andPrint) openPreview(saved);
+  // Start fresh new bill immediately after save
+  setTimeout(()=>initBill(),andPrint?300:100);
+}
+
+function startNewBill(){
+  if(cur.items&&cur.items.length>0&&!cur.saved){
+    discardCb=()=>initBill();
+    document.getElementById('discardOv').classList.add('open');
+    return;
+  }
+  initBill();
+}
+
+// ══════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════
+function renderHistory(){
+  const q=(document.getElementById('histSearch')?.value||'').trim().toLowerCase();
+  let list=bills;
+  if(q){
+    list=bills.filter(b=>{
+      if(String(b.giftNo).includes(q)) return true;
+      if(b.dateStr.toLowerCase().includes(q)) return true;
+      if(b.items.some(it=>it.name.toLowerCase().includes(q)||it.code.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }
+  const el=document.getElementById('histList');
+  if(!list.length){el.innerHTML='<div class="nohist">'+(q?'No match.':'No estimates saved yet.')+'</div>';return;}
+  el.innerHTML=list.map(b=>`
+    <div class="hcard ${b.id===cur.id?'act':''}" onclick="loadBill('${b.id}')">
+      <div class="hctop">
+        <span class="hcnum">Gift #${b.giftNo}</span>
+        <span class="hcamt"> ${b.total.toFixed(2)}</span>
+      </div>
+      <div class="hcmeta">${b.dateStr} · ${b.timeStr} · ${b.items.length} item${b.items.length!==1?'s':''}</div>
+      <div class="hcbtns">
+        <button class="hbtn hb-dup" onclick="event.stopPropagation();printDuplicate('${b.id}')">📄 Dup Print</button>
+        <button class="hbtn hb-prt" onclick="event.stopPropagation();openPreview(bills.find(x=>x.id==='${b.id}'))">🖨 Print</button>
+        <button class="hbtn" style="background:#e8f5e9;border-color:#388e3c;color:#388e3c;" onclick="event.stopPropagation();shareWhatsApp('${b.id}')">💬 WhatsApp</button>
+        <button class="hbtn hb-del" onclick="event.stopPropagation();askDel('${b.id}','bill')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+function loadBill(id){
+  const b=bills.find(x=>x.id===id);
+  if(!b) return;
+  if(cur.items&&cur.items.length>0&&!cur.saved){
+    discardCb=()=>doLoadBill(id);
+    document.getElementById('discardOv').classList.add('open');
+    return;
+  }
+  doLoadBill(id);
+}
+function doLoadBill(id){
+  const b=bills.find(x=>x.id===id);
+  if(!b) return;
+  cur={...b,items:b.items.map(i=>({...i})),saved:true};
+  localStorage.removeItem('erp_draft');
+  document.getElementById('giftNoDisplay').textContent=cur.giftNo;
+  renderItems();clearEntry();
+  showPage('billing',true);
+}
+function dupBill(id){
+  const b=bills.find(x=>x.id===id);
+  if(!b) return;
+  if(cur.items&&cur.items.length>0&&!cur.saved){
+    discardCb=()=>doDup(id);
+    document.getElementById('discardOv').classList.add('open');
+    return;
+  }
+  doDup(id);
+}
+function doDup(id){
+  const b=bills.find(x=>x.id===id);
+  if(!b) return;
+  const gno=nextGiftNo();
+  const now=new Date();
+  cur={
+    id:todayKey()+'-'+String(gno).padStart(3,'0'),giftNo:gno,
+    dateKey:todayKey(),
+    dateStr:now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+    timeStr:now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    items:b.items.map(i=>({...i})),saved:false
+  };
+  document.getElementById('giftNoDisplay').textContent=gno;
+  renderItems();clearEntry();
+  showPage('billing',true);
+  showToast(`Gift #${b.giftNo} duplicated as #${gno}`);
+}
+
+// ══════════════════════════════════════
+//  DELETE CONFIRM
+// ══════════════════════════════════════
+function askDel(id,type){
+  pendDel={id,type};
+  let lbl='';
+  if(type==='bill'){const b=bills.find(x=>x.id===id);lbl=b?`Gift #${b.giftNo} (${b.dateStr})`:id;}
+  else lbl=`code "${id}" — ${products[id]}`;
+  document.getElementById('delLabel').textContent=lbl;
+  document.getElementById('delOv').classList.add('open');
+}
+function closeDel(){pendDel=null;document.getElementById('delOv').classList.remove('open');}
+function confirmDel(){
+  if(!pendDel) return;
+  if(pendDel.type==='bill'){
+    bills=bills.filter(b=>b.id!==pendDel.id);
+    localStorage.setItem('erp_bills',JSON.stringify(bills));
+    if(cur.id===pendDel.id){cur={};document.getElementById('giftNoDisplay').textContent='—';renderItems();}
+    renderHistory();showToast('Estimate deleted');
+  } else {
+    delete products[pendDel.id];
+    localStorage.setItem('erp_products',JSON.stringify(products));
+    renderInventory();showToast('Product deleted');
+  }
+  closeDel();
+}
+
+// ══════════════════════════════════════
+//  PRINT / PREVIEW
+// ══════════════════════════════════════
+function openPreview(data,isDuplicate){
+  if(!data||!data.items||!data.items.length) return;
+  activePrint={...data,isDuplicate:!!isDuplicate};
+  const total=data.items.reduce((s,i)=>s+i.amount,0);
+  document.getElementById('thermalDiv').innerHTML=buildThermal(data,total,isDuplicate);
+  document.getElementById('wifiPrintBtn').textContent=printer.ip?`📡 WiFi Print (${printer.ip})`:'📡 WiFi Print';
+  document.getElementById('previewOv').classList.add('open');
+}
+function printDuplicate(id){
+  const b=bills.find(x=>x.id===id);
+  if(b) openPreview(b,true);
+}
+function closePreview(e){
+  if(!e||e.target===document.getElementById('previewOv'))
+    document.getElementById('previewOv').classList.remove('open');
+}
+function buildThermal(bill,total,isDuplicate){
+  const rows=bill.items.map((it,i)=>{
+    const n=it.name?(it.name.length>22?it.name.slice(0,20)+'..':it.name):'';
+    const amt=it.amount.toFixed(2);
+    // Line 1: "1. Photoframe        300.00"  — sr+name left, amount right
+    // Line 2: "   2 qty x 150.00"            — qty x rate indented
+    const srName=`${i+1}. ${n}`;
+    return [
+      `<div class="thi"><span class="thin"><b>${i+1}.</b>${n?' '+n:''}</span><span>${amt}</span></div>`,
+      `<div class="thid" style="padding-left:14px;color:#444;">${it.qty} x ${it.rate.toFixed(2)}</div>`
+    ].join('');
+  }).join('');
+  const label=isDuplicate?'DUPLICATE ESTIMATE':'ESTIMATE';
+  return `<div class="thn">${label}</div>
+<div class="thd"></div>
+<div class="thm"><span>Gift No: <b>${bill.giftNo}</b></span><span style="text-align:right;font-size:10px;">${bill.dateStr}<br>${bill.timeStr}</span></div>
+<div class="thd"></div>
+${rows}
+<div class="thd"></div>
+<div class="tht"><span>TOTAL</span><span>${total.toFixed(2)}</span></div>
+<div class="thd"></div>
+<div class="thf">Sunday Closed</div>
+<div style="margin-top:6px;border-top:1px dashed #000;text-align:center;font-size:9px;color:#888;letter-spacing:2px;padding-top:3px;">${getCutLabel()}</div>`;
+}
+function getCutLabel(){
+  const mode=printer.cutMode||'full';
+  if(mode==='full')     return '✂ FULL CUT';
+  if(mode==='partial')  return '- PARTIAL CUT -';
+  if(mode==='feed_cut') return '✂ FEED + FULL CUT';
+  return '(no auto-cut)';
+}
+
+// ══════════════════════════════════════
+//  WIFI PRINT
+// ══════════════════════════════════════
+function getCutCmd(){
+  const mode=printer.cutMode||'full';
+  // ESC/POS cut commands:
+  // Full cut:    GS V 0      (0x1D 0x56 0x00)
+  // Partial cut: GS V 1      (0x1D 0x56 0x01)
+  // Feed+Full:   GS V B n    (0x1D 0x56 0x42 0x20) — feed 32 dots then full cut
+  // No cut:      just feed lines
+  if(mode==='full')      return '\x1D\x56\x00';
+  if(mode==='partial')   return '\x1D\x56\x01';
+  if(mode==='feed_cut')  return '\x1D\x56\x42\x20';
+  return '\n\n\n'; // no cut — just feed paper
+}
+function buildESCPOS(bill){
+  const total=bill.items.reduce((s,i)=>s+i.amount,0);
+  let t='\x1B\x40';
+  const heading=bill.isDuplicate?'DUPLICATE ESTIMATE':'ESTIMATE';
+  t+='\x1B\x61\x01';
+  t+='\x1B\x21\x10'+heading+'\x1B\x21\x00\n';
+  t+='\x1B\x61\x00';
+  t+='--------------------------------\n';
+  t+='Gift No: '+bill.giftNo+'\n';
+  t+=bill.dateStr+'  '+bill.timeStr+'\n';
+  t+='--------------------------------\n';
+  bill.items.forEach((it,i)=>{
+    const a=it.amount.toFixed(2);
+    const raw=it.name||'';
+    const n=raw.length>18?raw.slice(0,16)+'..':raw;
+    // "1. Photoframe          300.00"
+    const label=(i+1)+'.'+( n?' '+n:'' );
+    const space=Math.max(1,32-label.length-a.length);
+    t+=label+' '.repeat(space)+a+'\n';
+    // "   2 qty x 150.00" — no rupee symbol
+    t+='   '+it.qty+' qty x '+it.rate.toFixed(2)+'\n';
+  });
+  t+='--------------------------------\n';
+  const ts=total.toFixed(2);
+  const totLabel='TOTAL';
+  t+='\x1B\x21\x10'+totLabel+' '.repeat(Math.max(1,32-totLabel.length-ts.length))+ts+'\n\x1B\x21\x00';
+  t+='--------------------------------\n';
+  t+='\x1B\x61\x01Sunday Closed\n\n\n';
+  t+=getCutCmd();
+  return t;
+}
+async function sendWifi(){
+  if(!printer.ip){showToast('Set printer IP in Printer tab first');return;}
+  if(!activePrint) return;
+  const btn=document.getElementById('wifiPrintBtn');
+  btn.textContent='Sending…';btn.disabled=true;
+  const escpos=buildESCPOS(activePrint);
+  const ip=printer.ip.trim();
+  const port=parseInt(printer.port)||9100;
+
+  // Use Android native TCP bridge (injected by WebView)
+  if(window.AndroidPrinter){
+    try{
+      // Convert ESC/POS string to base64 for safe transport over JS bridge
+      const b64=btoa(unescape(encodeURIComponent(escpos)));
+      const result=window.AndroidPrinter.printBase64(ip, port, b64);
+      if(result==='OK'){
+        showToast('Printed successfully!');
+        printer.connected=true;
+        localStorage.setItem('erp_printer',JSON.stringify(printer));
+        updatePrinterDot();
+      } else {
+        showToast('Print error: '+result);
+      }
+    }catch(e){
+      showToast('Print failed: '+e.message);
+    }
+  } else {
+    showToast('Open this app as the ERP APK to print directly.');
+  }
+  btn.textContent='Print ('+ip+')';
+  btn.disabled=false;
+}
+
+// ══════════════════════════════════════
+//  PRINTER SETTINGS
+// ══════════════════════════════════════
+function loadPrinterUI(){
+  document.getElementById('pIP').value=printer.ip||'';
+  document.getElementById('pPort').value=printer.port||'9100';
+  document.getElementById('pCutMode').value=printer.cutMode||'full';
+  setPstatUI(printer.ip?(printer.connected?'ok':'err'):'err');
+}
+function setPstatUI(state){
+  const bar=document.getElementById('pstatBar');
+  const dot=document.getElementById('pstatDot');
+  const txt=document.getElementById('pstatTxt');
+  bar.className='pstat '+state;
+  const ip=document.getElementById('pIP')?.value.trim()||printer.ip;
+  if(state==='ok'){dot.style.background='#6fcf6f';txt.textContent='Connected — '+ip;}
+  else if(state==='testing'){dot.style.background='#a0a0e0';txt.textContent='Testing…';}
+  else{dot.style.background='#e0a070';txt.textContent=ip?'Not connected — '+ip:'No printer configured';}
+}
+function savePrinter(){
+  printer.ip=document.getElementById('pIP').value.trim();
+  printer.port=document.getElementById('pPort').value.trim()||'9100';
+  printer.cutMode=document.getElementById('pCutMode').value||'full';
+  localStorage.setItem('erp_printer',JSON.stringify(printer));
+  updatePrinterDot();showToast('Printer settings saved');
+}
+async function testPrinter(){
+  const ip=document.getElementById('pIP').value.trim();
+  const port=parseInt(document.getElementById('pPort').value)||9100;
+  if(!ip){showToast('Enter printer IP first');return;}
+  setPstatUI('testing');
+  if(window.AndroidPrinter){
+    const result=window.AndroidPrinter.testConnection(ip, port);
+    if(result==='OK'){
+      printer.connected=true;
+      setPstatUI('ok');
+      showToast('Printer connected at '+ip);
+    } else {
+      printer.connected=false;
+      setPstatUI('err');
+      showToast('Cannot reach printer: '+result);
+    }
+  } else {
+    // Fallback for browser testing
+    try{
+      await fetch('http://'+ip+'/',{signal:AbortSignal.timeout(4000),mode:'no-cors'});
+      printer.connected=true;setPstatUI('ok');showToast('Printer reachable');
+    }catch{
+      printer.connected=false;setPstatUI('err');showToast('Cannot reach '+ip+' (open as APK for direct printing)');
+    }
+  }
+}
+function updatePrinterDot(){
+  const dot=document.getElementById('pdot');
+  const lbl=document.getElementById('plabel');
+  if(printer.ip&&printer.connected){dot.className='pdot ok';lbl.textContent=printer.ip;}
+  else if(printer.ip){dot.className='pdot set';lbl.textContent=printer.ip;}
+  else{dot.className='pdot';lbl.textContent='WiFi Printer';}
+}
+
+// ══════════════════════════════════════
+//  INVENTORY
+// ══════════════════════════════════════
+function invKD(e){if(e.key==='Enter')addProduct();}
+function addProduct(){
+  const code=document.getElementById('newCode').value.trim();
+  const name=document.getElementById('newName').value.trim();
+  if(!code){showToast('Enter product code');return;}
+  if(!name){showToast('Enter product name');return;}
+  const existed=!!products[code];
+  products[code]=name;
+  localStorage.setItem('erp_products',JSON.stringify(products));
+  document.getElementById('newCode').value='';
+  document.getElementById('newName').value='';
+  document.getElementById('newCode').focus();
+  renderInventory();
+  showToast(existed?`Updated: "${name}"`:`Added: ${code} → "${name}"`);
+}
+function renderInventory(){
+  const q=(document.getElementById('invSearch')?.value||'').trim().toLowerCase();
+  let keys=Object.keys(products).filter(k=>!q||k.toLowerCase().includes(q)||products[k].toLowerCase().includes(q));
+  keys.sort((a,b)=>isNaN(a)||isNaN(b)?a.localeCompare(b):+a-+b);
+  document.getElementById('icount').textContent=`${keys.length} product${keys.length!==1?'s':''}${q?' (filtered)':''}`;
+  const body=document.getElementById('invBody');
+  if(!keys.length){body.innerHTML='<tr><td colspan="3" class="etbl">No products.</td></tr>';return;}
+  body.innerHTML=keys.map(k=>{
+    if(editCode===k) return `<tr class="editing">
+      <td><input class="einp ec" id="ec-code" value="${k}"/></td>
+      <td><input class="einp" id="ec-name" value="${products[k]}" onkeydown="editKD(event,'${k}')"/></td>
+      <td><div class="iacell">
+        <button class="ib ib-s" onclick="saveEdit('${k}')">✓ Save</button>
+        <button class="ib ib-c" onclick="cancelEdit()">✕</button>
+      </div></td>
+    </tr>`;
+    return `<tr><td>${k}</td><td>${products[k]}</td>
+    <td><div class="iacell">
+      <button class="ib ib-e" onclick="startEdit('${k}')">✎ Edit</button>
+      <button class="ib ib-d" onclick="askDel('${k}','product')">🗑</button>
+    </div></td></tr>`;
+  }).join('');
+}
+function startEdit(code){editCode=code;renderInventory();setTimeout(()=>{const el=document.getElementById('ec-name');if(el){el.focus();el.select();}},40);}
+function cancelEdit(){editCode=null;renderInventory();}
+function editKD(e,old){if(e.key==='Enter')saveEdit(old);if(e.key==='Escape')cancelEdit();}
+function saveEdit(old){
+  const nc=document.getElementById('ec-code').value.trim();
+  const nn=document.getElementById('ec-name').value.trim();
+  if(!nc){showToast('Code cannot be empty');return;}
+  if(!nn){showToast('Name cannot be empty');return;}
+  if(nc!==old&&products[nc]){showToast(`Code "${nc}" already exists`);return;}
+  if(nc!==old) delete products[old];
+  products[nc]=nn;
+  localStorage.setItem('erp_products',JSON.stringify(products));
+  editCode=null;renderInventory();showToast(`Saved: ${nc} → "${nn}"`);
+}
+
+// ══════════════════════════════════════
+//  EXCEL / CSV IMPORT & EXPORT
+// ══════════════════════════════════════
+function importFile(input){
+  const file=input.files[0];
+  if(!file) return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      let rows=[];
+      if(ext==='csv'){
+        const text=e.target.result;
+        const lines=text.split(/\r?\n/).filter(l=>l.trim());
+        const header=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+        const ci=header.indexOf('code'),ni=header.indexOf('name');
+        if(ci<0||ni<0){showToast('CSV must have "Code" and "Name" columns');return;}
+        for(let i=1;i<lines.length;i++){
+          const cols=lines[i].split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+          if(cols[ci]&&cols[ni]) rows.push({code:cols[ci],name:cols[ni]});
+        }
+      } else {
+        const wb=XLSX.read(e.target.result,{type:'binary'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const data=XLSX.utils.sheet_to_json(ws,{header:1});
+        if(!data.length){showToast('Empty file');return;}
+        const hdr=data[0].map(h=>String(h).trim().toLowerCase());
+        const ci=hdr.indexOf('code'),ni=hdr.indexOf('name');
+        if(ci<0||ni<0){showToast('Excel must have "Code" and "Name" columns');return;}
+        for(let i=1;i<data.length;i++){
+          const r=data[i];
+          if(r[ci]&&r[ni]) rows.push({code:String(r[ci]).trim(),name:String(r[ni]).trim()});
+        }
+      }
+      let added=0,updated=0;
+      rows.forEach(r=>{
+        if(products[r.code]) updated++;
+        else added++;
+        products[r.code]=r.name;
+      });
+      localStorage.setItem('erp_products',JSON.stringify(products));
+      renderInventory();
+      showToast(`Imported: ${added} new, ${updated} updated`);
+    }catch(err){showToast('Import failed: '+err.message);}
+    input.value='';
+  };
+  if(ext==='csv') reader.readAsText(file);
+  else reader.readAsBinaryString(file);
+}
+
+function exportXLSX(){
+  const keys=Object.keys(products).sort((a,b)=>isNaN(a)||isNaN(b)?a.localeCompare(b):+a-+b);
+  const data=[['Code','Name'],...keys.map(k=>[k,products[k]])];
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:14},{wch:36}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Products');
+  XLSX.writeFile(wb,'inventory.xlsx');
+  showToast('Excel downloaded');
+}
+function exportCSV(){
+  const keys=Object.keys(products).sort((a,b)=>isNaN(a)||isNaN(b)?a.localeCompare(b):+a-+b);
+  const rows=['Code,Name',...keys.map(k=>`${k},"${products[k]}"`)];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download='inventory.csv';a.click();
+  showToast('CSV downloaded');
+}
+
+// ══════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ══════════════════════════════════════
+//  CALCULATOR MODE
+// ══════════════════════════════════════
+let billingMode='normal'; // 'normal' | 'calc'
+
+function setMode(mode){
+  billingMode=mode;
+  const nb=document.getElementById('btnNormalMode');
+  const cb=document.getElementById('btnCalcMode');
+  const nr=document.getElementById('normalModeRow');
+  const cr=document.getElementById('calcModeRow');
+  if(mode==='calc'){
+    nb.style.cssText='background:transparent;color:var(--accent);border-color:var(--accent);';
+    cb.style.cssText='background:var(--accent);color:#fff;border-color:var(--accent);';
+    nr.style.display='none';
+    cr.style.display='block';
+    document.getElementById('qtyInput').focus();
+  } else {
+    nb.style.cssText='background:var(--accent);color:#fff;border-color:var(--accent);';
+    cb.style.cssText='background:transparent;color:var(--accent);border-color:var(--accent);';
+    nr.style.display='block';
+    cr.style.display='none';
+    document.getElementById('codeInput').focus();
+  }
+  renderItems();
+}
+
+// ══════════════════════════════════════
+//  EDIT ITEM
+// ══════════════════════════════════════
+let editItemIdx=null;
+function openEditItem(i){
+  editItemIdx=i;
+  const it=cur.items[i];
+  document.getElementById('editItemName').textContent=it.calcMode?`Item ${i+1}`:(it.name||`Item ${i+1}`);
+  document.getElementById('editQty').value=it.qty;
+  document.getElementById('editRate').value=it.rate;
+  document.getElementById('editAmt').textContent=' '+it.amount.toFixed(2);
+  document.getElementById('editQty').oninput=updateEditAmt;
+  document.getElementById('editRate').oninput=updateEditAmt;
+  document.getElementById('editItemOv').classList.add('open');
+  setTimeout(()=>document.getElementById('editQty').select(),50);
+}
+function updateEditAmt(){
+  const q=parseFloat(document.getElementById('editQty').value)||0;
+  const r=parseFloat(document.getElementById('editRate').value)||0;
+  document.getElementById('editAmt').textContent=' '+(q*r).toFixed(2);
+}
+function closeEditItem(e){
+  if(!e||e.target===document.getElementById('editItemOv')){
+    document.getElementById('editItemOv').classList.remove('open');
+    editItemIdx=null;
+  }
+}
+function saveEditItem(){
+  if(editItemIdx===null) return;
+  const qty=parseFloat(document.getElementById('editQty').value);
+  const rate=parseFloat(document.getElementById('editRate').value);
+  if(!qty||qty<=0){showToast('Enter valid quantity');return;}
+  if(!rate||rate<=0){showToast('Enter valid rate');return;}
+  cur.items[editItemIdx].qty=qty;
+  cur.items[editItemIdx].rate=rate;
+  cur.items[editItemIdx].amount=qty*rate;
+  cur.saved=false;saveDraft();renderItems();
+  document.getElementById('editItemOv').classList.remove('open');
+  editItemIdx=null;
+  showToast('Item updated');
+}
+
+// ══════════════════════════════════════
+//  WHATSAPP SHARE
+// ══════════════════════════════════════
+function buildWhatsAppText(bill,isDuplicate){
+  const total=bill.items.reduce((s,i)=>s+i.amount,0);
+  const heading=isDuplicate?'*DUPLICATE ESTIMATE*':'*ESTIMATE*';
+  let msg=heading+'\n';
+  msg+=`Gift No: *${bill.giftNo}*\n`;
+  msg+=`Date: ${bill.dateStr}  ${bill.timeStr}\n`;
+  msg+='--------------------------------\n';
+  bill.items.forEach((it,i)=>{
+    const name=it.name?`${it.name}  `:'';
+    msg+=`${i+1}. ${name}${it.qty} qty x ${it.rate.toFixed(2)} = *${it.amount.toFixed(2)}*\n`;
+  });
+  msg+='--------------------------------\n';
+  msg+=`*TOTAL: ${total.toFixed(2)}*\n`;
+  msg+='Sunday Closed';
+  return msg;
+}
+async function captureReceiptImage(billData,isDuplicate){
+  // Build a temporary off-screen thermal div, capture with canvas
+  const total=billData.items.reduce((s,i)=>s+i.amount,0);
+  const tmp=document.createElement('div');
+  tmp.style.cssText='position:fixed;left:-9999px;top:0;background:#fff;padding:14px 10px;width:300px;font-family:Courier New,monospace;font-size:12px;line-height:1.6;color:#000;';
+  tmp.innerHTML=buildThermal(billData,total,isDuplicate);
+  document.body.appendChild(tmp);
+  try{
+    const canvas=document.createElement('canvas');
+    const scale=2;
+    canvas.width=tmp.offsetWidth*scale;
+    canvas.height=tmp.offsetHeight*scale;
+    const ctx=canvas.getContext('2d');
+    ctx.scale(scale,scale);
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    // Use html2canvas if available, else fallback
+    if(window.html2canvas){
+      const c=await html2canvas(tmp,{scale,backgroundColor:'#fff',useCORS:true});
+      document.body.removeChild(tmp);
+      return c.toDataURL('image/png');
+    }
+    document.body.removeChild(tmp);
+    return null;
+  }catch(e){
+    document.body.removeChild(tmp);
+    return null;
+  }
+}
+async function shareWhatsApp(id){
+  const b=bills.find(x=>x.id===id);
+  if(!b) return;
+  await doShareWhatsApp(b,false);
+}
+async function shareActiveWhatsApp(){
+  if(!activePrint) return;
+  await doShareWhatsApp(activePrint,!!activePrint.isDuplicate);
+}
+async function doShareWhatsApp(bill,isDuplicate){
+  showToast('Preparing image…');
+  const imgData=await captureReceiptImage(bill,isDuplicate);
+  if(imgData && navigator.share){
+    // Convert base64 to blob and share as file
+    const res=await fetch(imgData);
+    const blob=await res.blob();
+    const file=new File([blob],`estimate_${bill.giftNo}.png`,{type:'image/png'});
+    try{
+      await navigator.share({files:[file],title:`Estimate Gift #${bill.giftNo}`});
+      return;
+    }catch(e){
+      if(e.name==='AbortError') return;
+    }
+  }
+  if(imgData){
+    // Fallback: download image + open WhatsApp text
+    const a=document.createElement('a');
+    a.href=imgData;
+    a.download=`estimate_${bill.giftNo}.png`;
+    a.click();
+    showToast('Image saved! Attach it in WhatsApp.');
+    setTimeout(()=>{
+      const text=buildWhatsAppText(bill,isDuplicate);
+      window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+    },800);
+  } else {
+    // No image capture: fallback to text only
+    const text=buildWhatsAppText(bill,isDuplicate);
+    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+  }
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+restoreOrInit();
+updatePrinterDot();
+</script>
+</body>
+</html>
